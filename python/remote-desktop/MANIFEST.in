@@ -1,0 +1,3 @@
+global-include *.xml remote-desktop README
+exclude build.sh setup.cfg MANIFEST.in
+exclude remote_desktop.egg-info/*

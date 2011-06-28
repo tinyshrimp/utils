@@ -1,0 +1,66 @@
+BIN_PATH='/usr/bin'
+START_SCRIPT='remote-desktop'
+
+########################################################
+# sets the mode of start script file
+
+if [ ! -f "${BIN_PATH}/${START_SCRIPT}" ]; then
+	echo "Cannot find the start script. ${INSTALL_PATH}/${START_SCRIPT}"
+	exit 1
+fi
+
+chmod 555 "${BIN_PATH}/${START_SCRIPT}"
+if [[ "$?" != "0" ]]; then
+	echo "Failed to change mode of start script to 555."
+	exit 3
+fi
+
+########################################################
+# creates launcher to user desktop
+
+LAUNCHER_FILE_NAME="Remote Desktop.desktop"
+PASSWD_FILE_PATH='/etc/passwd'
+USER_GROUP_INDEX=4
+
+ls '/home' | while read line
+do
+	USER_NAME="${line}"
+	USER_PASSWD_INFOS=()
+	INDEX=0
+
+	for x in $(cat "${PASSWD_FILE_PATH}" | grep "${USER_NAME}" | tr ":" "\n")
+	do 
+		USER_PASSWD_INFOS[${INDEX}]=${x}
+		INDEX=`expr ${INDEX} + 1`
+	done
+	USER_GROUP=${USER_PASSWD_INFOS[${USER_GROUP_INDEX}]}
+
+	if [[ "${USER_GROUP}" == "" ]]; then
+		continue
+	fi
+
+
+	USER_DESKTOP="/home/${USER_NAME}/Desktop"
+	if [[ ! -d "${USER_DESKTOP}" ]]; then
+		continue
+	fi
+
+	LAUNDHER_PATH="${USER_DESKTOP}/${LAUNCHER_FILE_NAME}"
+	touch "${LAUNDHER_PATH}"
+
+	echo '#!/usr/bin/env xdg-open' >> "${LAUNDHER_PATH}"
+	echo '' >> "${LAUNDHER_PATH}"
+	echo '[Desktop Entry]' >> "${LAUNDHER_PATH}"
+	echo 'Name=Remote Desktop' >> "${LAUNDHER_PATH}"
+	echo 'Comment=' >> "${LAUNDHER_PATH}"
+	echo 'Icon=wicd-gtk' >> "${LAUNDHER_PATH}"
+	echo 'Exec=remote-desktop' >> "${LAUNDHER_PATH}"
+	echo 'Type=Application' >> "${LAUNDHER_PATH}"
+	echo 'Terminal=false' >> "${LAUNDHER_PATH}"
+	echo 'Encoding=UTF-8' >> "${LAUNDHER_PATH}"
+	echo 'Categories=Accessories;' >> "${LAUNDHER_PATH}"
+
+	chown ${USER_NAME} "${LAUNDHER_PATH}"
+	chgrp ${USER_GROUP} "${LAUNDHER_PATH}"
+	chmod 755 "${LAUNDHER_PATH}"
+done

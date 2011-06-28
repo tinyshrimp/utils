@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<settings>
+	<resolutions>
+		<resolution>Full Screen</resolution>
+		<resolution>1024x768</resolution>		
+		<resolution>1280x720</resolution>
+		<resolution>1280x800</resolution>
+		<resolution>1280x1024</resolution>
+		<resolution>1600x900</resolution>
+		<resolution>1600x1000</resolution>
+		<resolution>1920x1080</resolution>
+		<resolution>1920x1200</resolution>
+		<resolution>1920x1440</resolution>
+	</resolutions>
+</settings>

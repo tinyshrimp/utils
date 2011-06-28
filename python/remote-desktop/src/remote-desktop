@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+ENV='/usr/bin/env'
+INSTALL_PATH='/usr/local/lib/python2.7/dist-packages/remote-desktop'
+START_SCRIPT='main.py'
+
+${ENV} python ${INSTALL_PATH}/${START_SCRIPT}
