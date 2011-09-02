@@ -8,8 +8,8 @@ from setuptools import setup
 
 setup(name='remote-desktop',
       version='0.0.1',
-      author='xiwang',
-      author_email='xinpengw@cn.ibm.com',
+      author='tiny shrimp',
+      author_email='tiny.strimp@gmail.com',
 #      maintainer='',
 #      maintainer_email='',
       description='The front-end of rdesktop created by wxpython.',
