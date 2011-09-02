@@ -1,0 +1,26 @@
+Description
+------------------------------------------------------------------
+This package is used to custom the desktop of Ubuntu with Openbox.
+Auto install packages to custom the desktop of Ubuntu.
+
+Follow packages will be installed without prompt
+    xorg openbox openbox-themes gdm
+    tint2 feh pcmanfm obconf lxterminal lxappearance wicd xscreensaver
+
+Follow packages you could choose to install them partly or all
+    language-selector-gnome
+    firefox flashplugin-installer
+    vim-gtk libreoffice
+    file-roller rar unrar p7zip-full
+    python python-wxgtk2.8 rdesktop
+
+Follow kernel CANNOT be installed in virtual machine
+    linux-generic-pae
+
+Installation
+-----------------------------------------------------------------
+1. Install command line system with Ubuntu alternate version
+2. Login system with normal user which you will used in the future
+3. Run Ubuntu_Openbox_Desktop_Installer.bin and select packages during installing
+4. Reboot system after installation finished
+5. Select 'Openbox Session' on login screen and login
