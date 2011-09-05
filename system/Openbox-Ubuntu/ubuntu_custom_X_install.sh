@@ -2,10 +2,13 @@
 
 SELECTED_PACKAGES=''
 TMP_DIR='/tmp/custom-installation'
+SILENT_INSTALL=0
+USE_PAE_KERNEL=0
 
 package_select() {
     SELECTED_PACKAGES=''
     base_packages="$1"
+    default_action="$2"
 
     need_packages=''
     for package in $base_packages
@@ -25,10 +28,14 @@ package_select() {
         echo 'Do you want to install follow packages?'
         echo "Install ${need_packages}"
         echo '--------------------------------------------------------------------'
-        echo "y/N/Custom (default is y):"
+        echo "y/N/Custom (default is ${default_action}):"
         while read select
         do
-            if [ "${select}" = "" ] || [ "${select}" = "y" ]; then
+            if [ "${select}" = "" ]; then
+                select="${default_action}"
+            fi
+
+            if [ "${select}" = "y" ]; then
                 SELECTED_PACKAGES="${need_packages}"
                 break
             elif [ "${select}" = "Custom" ]; then
@@ -62,7 +69,7 @@ package_select() {
 }
 
 install_packages() {
-    package_select "$1"
+    package_select "$1" "$2"
     if [ "${SELECTED_PACKAGES}" != "" ]; then
         while true
         do
@@ -102,6 +109,40 @@ install_packages() {
         return 1 # no package need be installed
     fi
 }
+
+replace_sources_list() {
+    # get sources list from mirrors.163.com
+    OLD_SOURCE_LIST="/etc/apt/sources.list"
+    NEW_SOURCE_LIST="sources.list.${CODENAME}"
+    URL="http://mirrors.163.com/.help/${NEW_SOURCE_LIST}"
+
+    wget -c "${URL}"
+    if [ "$?" != "0" ]; then
+        echo 'Cannot get the new sources.list file from mirrors.163.com.'
+        echo 'Default offical sources.list will be used.'
+    else
+        # replace sources list
+        if [ -f "${NEW_SOURCE_LIST}" ]; then
+            sudo mv "${OLD_SOURCE_LIST}" "${OLD_SOURCE_LIST}.bak"
+            sudo mv "${NEW_SOURCE_LIST}" "${OLD_SOURCE_LIST}"
+
+            echo 'sources.list has been replaced to mirrors.163.com.'
+            echo 'You could find the old sources list in sources.list.bak.'
+        fi
+    fi
+}
+
+###############################################################################
+# parse command line arguments
+###############################################################################
+while [ $# -gt 0 ]
+do
+    case $1 in
+        -q) SILENT_INSTALL=1; shift 1;;
+        -m) USE_PAE_KERNEL=1; shift 1;;
+        *) shift 1;;
+    esac
+done
 
 ###############################################################################
 # check linux version
@@ -166,33 +207,22 @@ echo '--------------------------------------------------------------------'
 echo 'Get sources list from mirrors.163.com'
 echo '--------------------------------------------------------------------'
 
-echo 'Do you want use apt source of mirrors.163.com to replace '
-echo 'your original sources list? (y/N) [default is y]'
-while read select
-do
-    if [ "${select}" = "" ] || [ "${select}" = "y" ] || [ "${select}" = "Y" ]; then
-        # get sources list from mirrors.163.com
-        OLD_SOURCE_LIST="/etc/apt/sources.list"
-        NEW_SOURCE_LIST="sources.list.${CODENAME}"
-        URL="http://mirrors.163.com/.help/${NEW_SOURCE_LIST}"
-
-        wget -c "${URL}"
-        if [ "$?" != "0" ]; then
-            echo 'Cannot get the new sources.list file from mirrors.163.com.'
-            echo 'Default offical sources.list will be used.'
+if [ ${SILENT_INSTALL} -eq 0 ]; then
+    echo 'Do you want use apt source of mirrors.163.com to replace '
+    echo 'your original sources list? (y/N) [default is y]'
+    while read select
+    do
+        if [ "${select}" = "" ] || [ "${select}" = "y" ] || [ "${select}" = "Y" ]; then
+            replace_sources_list
+            break
         else
-            # replace sources list
-            if [ -f "${NEW_SOURCE_LIST}" ]; then
-                sudo mv "${OLD_SOURCE_LIST}" "${OLD_SOURCE_LIST}.bak"
-                sudo mv "${NEW_SOURCE_LIST}" "${OLD_SOURCE_LIST}"
-            fi
+            echo 'User canceled'
+            break
         fi
-        break
-    else
-        echo 'User canceled'
-        break
-    fi
-done
+    done
+else
+    replace_sources_list
+fi
 
 ##############################################################################
 # upgrade system
@@ -224,9 +254,13 @@ echo 'NOTICE:'
 echo '  Please DONT install this kernel if your system is running in '
 echo 'a virtual machine. Otherwise, the system will cannot be started.'
 echo '--------------------------------------------------------------------'
-install_packages 'linux-generic-pae'
-if [ "$?" = 0 ]; then
-    sudo update-grub
+if [ ${SILENT_INSTALL} = 0 ]; then
+    install_packages 'linux-generic-pae' 'N'
+    if [ "$?" = 0 ]; then
+        sudo update-grub
+    fi
+elif [ ${USE_PAE_KERNEL} -eq 1 ]; then
+    sudo apt-get install linux-generic-pae -y
 fi
 
 # install desktop
@@ -242,42 +276,63 @@ echo '--------------------------------------------------------------------'
 echo 'Install Tint2, PCManFM, feh, obconf, lxterminal, lxappearance'
 echo '        wicd and xscreensaver'
 echo '--------------------------------------------------------------------'
-sudo apt-get install tint2 feh pcmanfm obconf lxterminal lxappearance wicd xscreensaver -y
+sudo apt-get install tint2 feh pcmanfm obconf lxterminal lxappearance wicd xscreensaver xscreensaver-data-extra xscreensaver-gl-extra -y
 
 # install language support
 echo
 echo '--------------------------------------------------------------------'
 echo 'Install Language Support Tool'
 echo '--------------------------------------------------------------------'
-install_packages 'language-selector-gnome'
+if [ ${SILENT_INSTALL} -eq 0 ]; then
+    install_packages 'language-selector-gnome' 'y'
+else
+    sudo apt-get install language-selector-gnome -y
+fi
 
 # install web tools
 echo
 echo '--------------------------------------------------------------------'
 echo 'Install Firefox and Flash plugin'
 echo '--------------------------------------------------------------------'
-install_packages 'firefox flashplugin-installer'
+if [ ${SILENT_INSTALL} -eq 0 ]; then
+    install_packages 'firefox flashplugin-installer' 'y'
+else
+    sudo apt-get install firefox flashplugin-installer -y
+fi
 
 # install text editor
 echo
 echo '--------------------------------------------------------------------'
 echo 'Install Gvim and LibreOffice'
 echo '--------------------------------------------------------------------'
-install_packages 'vim-gtk libreoffice'
+if [ ${SILENT_INSTALL} -eq 0 ]; then
+    install_packages 'vim-gtk libreoffice' 'y'
+else
+    sudo apt-get install vim-gtk libreoffice -y
+fi
 
 # install compression tools
 echo
 echo '--------------------------------------------------------------------'
 echo 'Install Compression Tool'
 echo '--------------------------------------------------------------------'
-install_packages 'file-roller rar unrar p7zip-full'
+if [ ${SILENT_INSTALL} -eq 0 ]; then
+    install_packages 'file-roller rar unrar p7zip-full' 'y'
+else
+    sudo apt-get install file-roller rar unrar p7zip-full -y
+fi
 
 # install remote desktop tools
 echo
 echo '--------------------------------------------------------------------'
 echo 'Install Remote Desktop Tool'
 echo '--------------------------------------------------------------------'
-install_packages 'python python-wxgtk2.8 rdesktop'
+if [ ${SILENT_INSTALL} -eq 0 ]; then
+    install_packages 'python python-wxgtk2.8 rdesktop' 'y'
+else
+    sudo apt-get install python python-wxgtk2.8 rdesktop -y
+fi
+
 if [ "`dpkg --list | grep 'rdesktop'`" != "" ]; then
     sudo dpkg -i "${TMP_DIR}/packages/remote-desktop_0.0.1-14_all.deb"
 fi
@@ -291,9 +346,25 @@ echo 'Copying default config files of Openbox to .config/openbox ...'
 echo '--------------------------------------------------------------------'
 
 mkdir -p ${HOME}/.config/openbox
-cp /etc/xdg/openbox/autostart.sh "${HOME}/.config/openbox/"
-cp /etc/xdg/openbox/rc.xml "${HOME}/.config/openbox/"
 cp "${TMP_DIR}/packages/wallpaper.jpg" "${HOME}/.config/openbox/"
+
+##############################################################################
+# install default openbox theme
+##############################################################################
+if [ ! -d "${HOME}/.themes" ]; then
+    mkdir -p "${HOME}/.themes"
+fi
+tar -zxvf "${TMP_DIR}/packages/GoldEx.tar.gz" -C "${HOME}/.themes/"
+cp ${TMP_DIR}/packages/rc.xml "${HOME}/.config/openbox/"
+
+##############################################################################
+# set default theme of gtk 2.0
+##############################################################################
+if [ -f "${HOME}/.gtkrc-2.0" ]; then
+    rm -f "${HOME}/.gtkrc-2.0"
+fi
+cp "${TMP_DIR}/packages/gtkrc-2.0" "${HOME}/.gtkrc-2.0"
+echo "include ${HOME}/.gtkrc-2.0.mine" >> "${HOME}/.gtkrc-2.0"
 
 ##############################################################################
 # add scripts autostart.sh
@@ -302,6 +373,7 @@ echo
 echo '--------------------------------------------------------------------'
 echo 'Appending auto start applications to .config/openbox/autostart.sh ...'
 echo '--------------------------------------------------------------------'
+cp /etc/xdg/openbox/autostart.sh "${HOME}/.config/openbox/"
 
 echo >> "${HOME}/.config/openbox/autostart.sh"
 
@@ -316,12 +388,13 @@ if [ "`dpkg --list | grep 'tint2'`" != "" ]; then
 fi
 
 echo 'wicd-client &' >> "${HOME}/.config/openbox/autostart.sh"
-echo 'eval `cat ~/.fehbg` &' >> "${HOME}/.config/openbox/autostart.sh"
 
 if [ "`dpkg --list | grep 'feh'`" != "" ]; then
-    feh --bg-fill "${HOME}/.config/openbox/wallpaper.jpg"
-    echo 'eval `cat ~/.fehbg` &'
+    echo "feh --bg-fill ${HOME}/.config/openbox/wallpaper.jpg" > "${HOME}/.fehbg"
+    echo 'eval `cat ~/.fehbg` &' >> "${HOME}/.config/openbox/autostart.sh"
 fi
+
+chmod u+x "${HOME}/.config/openbox/autostart.sh"
 
 echo 'Done'
 
@@ -377,8 +450,6 @@ if [ "`dpkg --list | grep 'vim-gtk'`" != "" ]; then
     echo '  </item>' >> "${HOME}/.config/openbox/menu.xml"
 fi
 
-    echo '' >> "${HOME}/.config/openbox/menu.xml"
-
 # add applications menu part
 echo '  <separator label="Applications" />' >> "${HOME}/.config/openbox/menu.xml"
 
@@ -429,6 +500,12 @@ if [ "`dpkg --list | grep 'lxappearance'`" != "" ]; then
     echo '    </item>' >> "${HOME}/.config/openbox/menu.xml"
 fi
 
+if [ "`dpkg --list | grep 'xscreensaver'`" != "" ]; then
+    echo '    <item label="Screen Saver">' >> "${HOME}/.config/openbox/menu.xml"
+    echo '      <action name="Execute"><execute>xscreensaver-demo</execute></action>' >> "${HOME}/.config/openbox/menu.xml"
+    echo '    </item>' >> "${HOME}/.config/openbox/menu.xml"
+fi
+
 echo '    <item label="Reconfigure">' >> "${HOME}/.config/openbox/menu.xml"
 echo '      <action name="Reconfigure" />' >> "${HOME}/.config/openbox/menu.xml"
 echo '    </item>' >> "${HOME}/.config/openbox/menu.xml"
@@ -475,29 +552,11 @@ echo '</openbox_menu>' >> "${HOME}/.config/openbox/menu.xml"
 
 echo 'Done'
 
-##############################################################################
-# set default openbox theme here
-##############################################################################
-echo
-echo '--------------------------------------------------------------------'
-echo ' Set default theme of Openbox to GoldEx'
-echo '--------------------------------------------------------------------'
-
-if [ "`dpkg --list | grep 'obconf'`" != "" ]; then
-    if [ -f "${TMP_DIR}/packages/GoldEx.obt" ]; then
-        echo
-        echo 'Install and apply default openbox theme - GoldEx ...'
-
-        obconf --install "${TMP_DIR}/packages/GoldEx.obt"
-
-        echo 'Done'
-    fi
-fi
 
 echo 
 echo "=========================================="
 echo " All packages have been installed."
-echo " You could reboot system now."
+echo " You could reboot system now"
 echo " Please select 'Openbox Session' on login screen."
 echo " Thanks for installed this desktop."
 echo " Wish you enjoy it."
