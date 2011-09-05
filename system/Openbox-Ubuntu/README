@@ -17,10 +17,25 @@ Follow packages you could choose to install them partly or all
 Follow kernel CANNOT be installed in virtual machine
     linux-generic-pae
 
+    This package will not be installed in silent mode by default. If you need install it, please use '-m' parameater.
+    In interactive mode, the default chosen has been set to 'N'.
+
 Installation
 -----------------------------------------------------------------
 1. Install command line system with Ubuntu alternate version
+
 2. Login system with normal user which you will used in the future
+
 3. Run Ubuntu_Openbox_Desktop_Installer.bin and select packages during installing
+    Interactive mode
+        You could run Ubuntu_Openbox_Desktop_Installer.bin without any parameters to enter this mode.
+        In this mode, some packages you could custome or not install them or part install
+
+    In silent mode, all packages will be installed beside pae kernel.
+        You could run 
+            Ubuntu_Openbox_Desktop_Installer.bin -q        (Without Pae kernel)
+            Ubuntu_Openbox_Desktop_Installer.bin -q -m     (With Pae kernel)
+
 4. Reboot system after installation finished
+
 5. Select 'Openbox Session' on login screen and login
